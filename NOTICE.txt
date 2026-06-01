@@ -1,0 +1,92 @@
+live-vlm-webui (modified by Emplus)
+====================================
+
+This product is based on live-vlm-webui:
+
+  Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+  Licensed under the Apache License, Version 2.0.
+  Original source: https://github.com/nvidia-ai-iot/live-vlm-webui
+
+You may obtain a copy of the License at:
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+This product contains modifications by Emplus, also licensed under
+the Apache License, Version 2.0.
+
+
+Modifications
+-------------
+
+The following changes have been made to the upstream live-vlm-webui v0.4.0:
+
+  * Added local-file video/image source support via a new
+    LocalFileVideoTrack class in src/live_vlm_webui/local_file_track.py.
+    Supports single image files, image folders cycled as slideshows, and
+    video files with native-FPS pacing and EOF looping.
+
+  * Extended the WebRTC offer() endpoint in src/live_vlm_webui/server.py
+    to dispatch on local_image_path / local_video_path parameters in
+    addition to the existing rtsp_url path.
+
+  * Added a /api/browse filesystem endpoint to support an in-browser
+    file picker.
+
+  * Added analysis-cadence modes to VideoProcessorTrack in
+    src/live_vlm_webui/video_processor.py:
+        - "frames"        every N decoded frames (original upstream behavior)
+        - "seconds"       every N wall-clock seconds
+        - "scene_change"  on detected scene change (mean-pixel-diff
+                          on 64x64 grayscale thumbnails, debounced)
+    plus Ollama backpressure protection that skips dispatch when the
+    previous VLM call is still in flight.
+
+  * Added a Jetson Thor GPU utilization fallback to
+    src/live_vlm_webui/gpu_monitor.py that reads cur_freq/max_freq from
+    sysfs when jetson-stats does not expose load directly.
+
+  * Added a 4-tab source UI (Webcam / IP Cam / Image / Video) in
+    src/live_vlm_webui/static/index.html with an inline file/folder
+    browser, cadence-mode controls, and Emplus EEP-500T branding for
+    the Jetson Thor system header.
+
+  * Added helper scripts: push.ps1, start.ps1, restart.ps1,
+    start (Linux), bin/vlm2 (Linux), bin/install_vlm2.sh,
+    SETUP_THOR.md.
+
+
+Third-party components
+----------------------
+
+This project depends on additional third-party software listed in
+pyproject.toml / requirements.txt. Each component is governed by its
+own license. The most notable runtime dependencies are:
+
+  * aiohttp                       — Apache License 2.0
+  * aiortc                        — BSD 3-Clause
+  * av (PyAV)                     — BSD 3-Clause
+  * opencv-python (cv2)           — Apache License 2.0
+  * numpy                         — BSD 3-Clause
+  * Pillow                        — HPND / MIT-CMU
+  * openai (Python SDK)           — Apache License 2.0
+  * httpx                         — BSD 3-Clause
+  * psutil                        — BSD 3-Clause
+  * nvidia-ml-py                  — BSD 3-Clause
+  * Lucide icons (web UI)         — ISC
+
+For inference, this project integrates with Ollama
+(https://ollama.com), which is licensed under the MIT License. The
+specific VLM model weights used at runtime (e.g. qwen2.5vl, gemma3)
+are subject to their respective model licenses, which the operator is
+responsible for reviewing and complying with.
+
+
+Trademarks
+----------
+
+NVIDIA, Jetson, and Thor are trademarks or registered trademarks of
+NVIDIA Corporation. Their use in this project's UI and documentation
+is purely descriptive (to identify the underlying hardware) and does
+not imply endorsement.
+
+Emplus and EEP-500T are trademarks of Emplus Technologies.

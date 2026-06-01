@@ -1,0 +1,24 @@
+#!/bin/bash
+# start — start live-vlm-webui server in FOREGROUND on Thor.
+# Run from project root: cd /home/ubuntu/vlm/vlm2 && ./start
+# Ctrl+C to stop. Logs stream to this terminal.
+
+cd "$(dirname "$0")"
+VENV_PY="./.venv/bin/python"
+
+if [ ! -x "$VENV_PY" ]; then
+    echo "ERROR: venv not found at $VENV_PY"
+    echo "Run the one-time setup from SETUP_THOR.md first."
+    exit 1
+fi
+
+# Kill any existing instance (use specific pattern, not 'live_vlm_webui'
+# which would match this very command line).
+pkill -f live_vlm_webui.server 2>/dev/null
+sleep 1
+
+echo "==> Starting live-vlm-webui (Ctrl+C to stop)"
+echo "    URL: https://$(hostname -I | awk '{print $1}'):8090"
+echo ""
+
+exec env PYTHONUNBUFFERED=1 "$VENV_PY" -u -m live_vlm_webui.server

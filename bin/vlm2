@@ -1,0 +1,72 @@
+#!/bin/bash
+# vlm2 — start/stop/restart live-vlm-webui server from anywhere on Thor
+#
+# Install (one-time, on Thor):
+#   mkdir -p ~/.local/bin
+#   cp /home/ubuntu/vlm/vlm2/bin/vlm2 ~/.local/bin/vlm2
+#   chmod +x ~/.local/bin/vlm2
+#   # If 'vlm2: command not found' afterwards:
+#   echo 'export PATH=$HOME/.local/bin:$PATH' >> ~/.bashrc && source ~/.bashrc
+#
+# Usage:
+#   vlm2          start in foreground (Ctrl+C to stop)
+#   vlm2 bg       start in background, log to /tmp/vlm.log
+#   vlm2 stop     kill the server
+#   vlm2 restart  stop, then start in background
+#   vlm2 log      tail the log
+#   vlm2 status   show whether the server is running
+
+PROJECT=/home/ubuntu/vlm/vlm2
+VENV_PY=$PROJECT/.venv/bin/python
+LOG=/tmp/vlm.log
+
+if [ ! -x "$VENV_PY" ]; then
+    echo "ERROR: venv python not found at $VENV_PY"
+    echo "Run the one-time setup from SETUP_THOR.md first."
+    exit 1
+fi
+
+case "${1:-start}" in
+    start)
+        pkill -f live_vlm_webui 2>/dev/null
+        sleep 1
+        cd "$PROJECT" && exec "$VENV_PY" -m live_vlm_webui.server
+        ;;
+    bg)
+        pkill -f live_vlm_webui 2>/dev/null
+        sleep 1
+        # setsid + closing stdin properly detaches from the SSH session so the
+        # process survives when the SSH command returns.
+        cd "$PROJECT" && setsid "$VENV_PY" -u -m live_vlm_webui.server </dev/null > "$LOG" 2>&1 &
+        disown 2>/dev/null || true
+        sleep 3
+        echo "--- last 20 lines of $LOG ---"
+        tail -n 20 "$LOG"
+        ;;
+    restart)
+        "$0" stop
+        sleep 1
+        "$0" bg
+        ;;
+    stop)
+        if pkill -f live_vlm_webui; then
+            echo "stopped"
+        else
+            echo "no server running"
+        fi
+        ;;
+    log)
+        tail -f "$LOG"
+        ;;
+    status)
+        if pgrep -af live_vlm_webui >/dev/null; then
+            pgrep -af live_vlm_webui
+        else
+            echo "not running"
+        fi
+        ;;
+    *)
+        echo "Usage: vlm2 [start|bg|restart|stop|log|status]"
+        exit 1
+        ;;
+esac
